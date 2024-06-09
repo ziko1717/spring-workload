@@ -1,6 +1,7 @@
 package com.example.springworkload.Service;
 
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.example.springworkload.Model.WorkloadRequest;
@@ -15,9 +16,12 @@ import java.util.Map;
 public class WorkloadService {
 
     // Git script variables
-    private static final String SSH_PRIV_KEY = System.getProperty("user.dir")+"\\.ssh\\id_ed25519";
-    private static final String REPO_URL = "git@github.com:ziko1717/workloads.git";
-    private static final String REPO_DIR = "workloads";
+    @Value("${ssh_priv_key}")
+    private String SSH_PRIV_KEY;
+    @Value("${repo_url}")
+    private String REPO_URL;
+    @Value("${repo_dir}")
+    private String REPO_DIR;
 
     public String generateWorkloadFile(WorkloadRequest request) throws IOException, InterruptedException {
         String fileName = request.getName() + ".yaml";
