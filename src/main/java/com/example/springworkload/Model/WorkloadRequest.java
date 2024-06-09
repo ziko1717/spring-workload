@@ -34,7 +34,7 @@ public class WorkloadRequest {
     private String resourcesLimitsMemory;
     private String resourcesLimitsCpu;
 
-    // Getters and setters
+    // Getters
 
     public String getWorkloadType() {
         return workloadType;
@@ -72,22 +72,6 @@ public class WorkloadRequest {
         return resourcesLimitsCpu;
     }
 
-    /*public static class Resource {
-        public String memory;
-        public String cpu;
-
-        // Getters and setters
-
-
-        public String getMemory() {
-            return memory;
-        }
-
-        public String getCpu() {
-            return cpu;
-        }
-    }*/
-
     public static class Variables {
         public String name;
         public Object value;
@@ -100,7 +84,7 @@ public class WorkloadRequest {
             return value;
         }
 
-        // Getters and setters
+        // Getters
     }
 
     public String getNamespace() {

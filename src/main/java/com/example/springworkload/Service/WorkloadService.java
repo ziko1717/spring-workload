@@ -16,6 +16,7 @@ import java.util.Map;
 public class WorkloadService {
 
     // Git script variables
+    // The SSH_PRIV_KEY variable must be set at as a global environment variable
     @Value("${ssh_priv_key}")
     private String SSH_PRIV_KEY;
     @Value("${repo_url}")
@@ -26,16 +27,18 @@ public class WorkloadService {
     public String generateWorkloadFile(WorkloadRequest request) throws IOException, InterruptedException {
         String fileName = request.getName() + ".yaml";
         File file = new File(REPO_DIR, fileName);
-
+        // Clone or pull the remote repository
         cloneOrPullRepository();
 
+        // Write yaml content in the file in the repo
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(generateYamlContent(request));
         }
 
-        // Commit and push changes
-        commitAndPush("Genrate file "+REPO_DIR+"/"+fileName+".yaml");
+        // Commit and push changes to the remote repository
+        commitAndPush("Genrate file "+REPO_DIR+"/"+fileName);
 
+        // Return file absolute path in the disk
         return file.getAbsolutePath();
     }
 
@@ -43,6 +46,15 @@ public class WorkloadService {
         StringBuilder yamlContent = new StringBuilder();
 
         try {
+            // Construct the Yaml file using WorlkloadRequest
+            // Getters and WorkloadService functions getBuildVariables, getEnvVariables & getParams
+            // The appendVariables function is used to append env and params
+            // which are direct child of the spec and appendSecondLevelVariables
+            // is for build:env which is child of a child of env
+            // The two functions can handle at the third level of
+            // the child being an object. This can be ameliorated
+            // maybe with recursivity and the functions merged.
+            // appendServiceServiceClaims is to append serviceClaims block.
             yamlContent.append("---\n");
             yamlContent.append("apiVersion: \"carto.run/v1alpha1\"\n");
             yamlContent.append("kind: \"Workload\"\n");
@@ -87,22 +99,20 @@ public class WorkloadService {
                 if (variable.getValue() instanceof String) {
                     // Handle string value
                     String stringValue = (String) variable.getValue();
-                    System.out.println("String value: " + stringValue);
                     yamlContent.append("        value: \"").append(stringValue).append("\"\n");
                 } else if (variable.getValue() instanceof Map) {
                     // Handle JSON object value
                     Map<String, Object> jsonValue = (Map<String, Object>) variable.getValue();
-                    System.out.println("JSON object value: " + jsonValue);
                     yamlContent.append("        value: \n");
                     for (Map.Entry<String, Object> entry : jsonValue.entrySet()) {
                         if (entry.getValue() instanceof String) {
                             yamlContent.append("          ").append(entry.getKey()).append(": \"").append(entry.getValue()).append("\"\n");
                         }
                         else if (entry.getValue() instanceof Map) {
-                            yamlContent.append("        "+entry.getKey()+": \n");
+                            yamlContent.append("          "+entry.getKey()+": \n");
                             Map<String, Object> jsonValue2 = (Map<String, Object>) entry.getValue();
                             for (Map.Entry<String, Object> entry2 :jsonValue2.entrySet()) {
-                                yamlContent.append("          ").append(entry2.getKey()).append(": \"").append(entry2.getValue()).append("\"\n");
+                                yamlContent.append("            ").append(entry2.getKey()).append(": \"").append(entry2.getValue()).append("\"\n");
                             }
                         }
 
@@ -122,22 +132,20 @@ public class WorkloadService {
                 if (variable.getValue() instanceof String) {
                     // Handle string value
                     String stringValue = (String) variable.getValue();
-                    System.out.println("String value: " + stringValue);
                     yamlContent.append("      value: \"").append(stringValue).append("\"\n");
                 } else if (variable.getValue() instanceof Map) {
                     // Handle JSON object value
                     Map<String, Object> jsonValue = (Map<String, Object>) variable.getValue();
-                    System.out.println("JSON object value: " + jsonValue);
                     yamlContent.append("      value: \n");
                     for (Map.Entry<String, Object> entry : jsonValue.entrySet()) {
                         if (entry.getValue() instanceof String) {
                             yamlContent.append("        ").append(entry.getKey()).append(": \"").append(entry.getValue()).append("\"\n");
                         }
                         else if (entry.getValue() instanceof Map) {
-                            yamlContent.append("      "+entry.getKey()+": \n");
+                            yamlContent.append("        "+entry.getKey()+": \n");
                             Map<String, Object> jsonValue2 = (Map<String, Object>) entry.getValue();
                             for (Map.Entry<String, Object> entry2 :jsonValue2.entrySet()) {
-                                yamlContent.append("        ").append(entry2.getKey()).append(": \"").append(entry2.getValue()).append("\"\n");
+                                yamlContent.append("          ").append(entry2.getKey()).append(": \"").append(entry2.getValue()).append("\"\n");
                             }
                         }
 
@@ -156,7 +164,7 @@ public class WorkloadService {
         yamlContent.append("      kind: \"").append(refKind).append("\"\n");
         yamlContent.append("      name: \"").append(refName).append("\"\n");
     }
-
+    // Modify a file if it exists in the repo and push
     public String modifyWorkloadFile(String name, WorkloadRequest request) throws IOException, InterruptedException {
         String fileName = name + ".yaml";
         File file = new File(REPO_DIR, fileName);
@@ -174,38 +182,40 @@ public class WorkloadService {
         }
 
         // Commit and push changes
-        commitAndPush("Updated file "+REPO_DIR+"/"+fileName+".yaml");
+        commitAndPush("Updated file "+REPO_DIR+"/"+fileName);
 
 
         return file.getAbsolutePath();
     }
-
-    public boolean deleteWorkloadFile(String name) throws IOException, InterruptedException {
+    // Delete a file if it exists and push
+    public String deleteWorkloadFile(String name) throws IOException, InterruptedException {
         String fileName = name + ".yaml";
         File file = new File(REPO_DIR, fileName);
         cloneOrPullRepository();
         if (!file.exists()) {
-            return false;
+            throw new IOException("File not found");
         }
         file.delete();
-        commitAndPush("Deleted file "+REPO_DIR+"/"+fileName+".yaml");
-        return true;
+        commitAndPush("Deleted file "+REPO_DIR+"/"+fileName);
+        return "File "+REPO_DIR+"/"+fileName+" Deleted";
     }
 
+
+    // Make use of a Powershell script scripts/git-utility to clone or pull the repo if it exists
     private void cloneOrPullRepository() throws IOException, InterruptedException {
         // Execute shell command to clone the repository
-        System.out.println(System.getProperty("user.dir"));
-        System.out.println("powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 ; CloneOrPull "+ SSH_PRIV_KEY +" "+ REPO_URL +" "+ REPO_DIR + "}\"");
-        String cloneCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 ; CloneOrPull "+ SSH_PRIV_KEY +" "+ REPO_URL +" "+ REPO_DIR + "}\"";
+        String cloneCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY +"; CloneOrPull "+ REPO_URL +" "+ REPO_DIR + "}\"";
         executePowerShellCommand(cloneCommand);
     }
 
+    // Make use of a Powershell script scripts/git-utility to commit and push
     private void commitAndPush(String commitMessage) throws IOException, InterruptedException {
         // Execute shell command to commit and push changes
-        String commitCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+ System.getProperty("user.dir") +"\\scripts\\git-utility.ps1 ; CommitAndPush "+ SSH_PRIV_KEY +" "+ REPO_DIR + " " + commitMessage + "}\"";
+        String commitCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+ System.getProperty("user.dir") +"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY +"; CommitAndPush "+ REPO_DIR + " '" + commitMessage + "'}\"";
         executePowerShellCommand(commitCommand);
     }
 
+    // Execute powershell script function
     private void executePowerShellCommand(String command) throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(command);
         int exitCode = process.waitFor();

@@ -42,11 +42,13 @@ public class WorkloadController {
 
     @DeleteMapping("/{name}")
     public ResponseEntity<String> deleteWorkload(@PathVariable String name) throws IOException, InterruptedException {
-        boolean deleted = workloadService.deleteWorkloadFile(name);
-        if (deleted) {
-            return ResponseEntity.ok("Workload file deleted");
-        } else {
-            return ResponseEntity.status(500).body("File does not exist");
+        try {
+            String response = workloadService.deleteWorkloadFile(name);
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body("Error deleting workload file: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 }
