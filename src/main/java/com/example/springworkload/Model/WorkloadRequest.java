@@ -9,15 +9,6 @@ public class WorkloadRequest {
     private String workloadType;
     private String hasTests;
     private String partOf;
-
-    public String getHasTests() {
-        return hasTests;
-    }
-
-    public String getPartOf() {
-        return partOf;
-    }
-
     private String gitUrl;
     private String gitopsTeam;
     private String language;
@@ -33,6 +24,14 @@ public class WorkloadRequest {
     private String resourcesRequestsCpu;
     private String resourcesLimitsMemory;
     private String resourcesLimitsCpu;
+
+    public String getHasTests() {
+        return hasTests;
+    }
+
+    public String getPartOf() {
+        return partOf;
+    }
 
     // Getters
 

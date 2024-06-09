@@ -204,14 +204,14 @@ public class WorkloadService {
     // Make use of a Powershell script scripts/git-utility to clone or pull the repo if it exists
     private void cloneOrPullRepository() throws IOException, InterruptedException {
         // Execute shell command to clone the repository
-        String cloneCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY +"; CloneOrPull "+ REPO_URL +" "+ REPO_DIR + "}\"";
+        String cloneCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY +" "+ REPO_DIR+"; "+ "CloneOrPull "+ REPO_URL +"}\"";
         executePowerShellCommand(cloneCommand);
     }
 
     // Make use of a Powershell script scripts/git-utility to commit and push
     private void commitAndPush(String commitMessage) throws IOException, InterruptedException {
         // Execute shell command to commit and push changes
-        String commitCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+ System.getProperty("user.dir") +"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY +"; CommitAndPush "+ REPO_DIR + " '" + commitMessage + "'}\"";
+        String commitCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+ System.getProperty("user.dir") +"\\scripts\\git-utility.ps1 "+ SSH_PRIV_KEY + " "+ REPO_DIR +"; CommitAndPush '" + commitMessage + "'}\"";
         executePowerShellCommand(commitCommand);
     }
 

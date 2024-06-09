@@ -1,21 +1,21 @@
 # Set the path to your SSH private key
 param(
-    [string]$SSHPrivateKey
+    [string]$SSHPrivateKey,
+    [string]$repoDir
 )
-
-git config --local core.sshCommand "ssh -i $SSHPrivateKey"
 
 # Function to clone or pull a git repository
 function CloneOrPull {
     param(
-        [string]$repoUrl,
-        [string]$repoDir
+        [string]$repoUrl
     )
 
     if (-not (Test-Path $repoDir)) {
         # If the directory doesn't exist, clone the repository
         Write-Host "Cloning repository from $repoUrl to $repoDir"
         & git clone $repoUrl $repoDir
+        cd $repoDir
+        git config --local core.sshCommand "ssh -i $SSHPrivateKey"
     } else {
         # If the directory exists, pull changes
         cd $repoDir
@@ -27,7 +27,6 @@ function CloneOrPull {
 # Function to commit and push changes to a git repository
 function CommitAndPush {
     param(
-        [string]$repoDir,
         [string]$commitMessage
     )
 
