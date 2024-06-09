@@ -72,7 +72,7 @@ public class WorkloadRequest {
         return resourcesLimitsCpu;
     }
 
-    public static class Resource {
+    /*public static class Resource {
         public String memory;
         public String cpu;
 
@@ -86,7 +86,7 @@ public class WorkloadRequest {
         public String getCpu() {
             return cpu;
         }
-    }
+    }*/
 
     public static class Variables {
         public String name;

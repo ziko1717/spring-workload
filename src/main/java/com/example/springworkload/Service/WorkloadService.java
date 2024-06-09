@@ -14,19 +14,23 @@ import java.util.Map;
 @Service
 public class WorkloadService {
 
-    private static final String DIRECTORY = "workloads";
+    // Git script variables
+    private static final String SSH_PRIV_KEY = System.getProperty("user.dir")+"\\.ssh\\id_ed25519";
+    private static final String REPO_URL = "git@github.com:ziko1717/workloads.git";
+    private static final String REPO_DIR = "workloads";
 
-    public String generateWorkloadFile(WorkloadRequest request) throws IOException {
+    public String generateWorkloadFile(WorkloadRequest request) throws IOException, InterruptedException {
         String fileName = request.getName() + ".yaml";
-        File file = new File(DIRECTORY, fileName);
+        File file = new File(REPO_DIR, fileName);
 
-        if (!file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
-        }
+        cloneOrPullRepository();
 
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(generateYamlContent(request));
         }
+
+        // Commit and push changes
+        commitAndPush("Genrate file "+REPO_DIR+"/"+fileName+".yaml");
 
         return file.getAbsolutePath();
     }
@@ -149,9 +153,13 @@ public class WorkloadService {
         yamlContent.append("      name: \"").append(refName).append("\"\n");
     }
 
-    public String modifyWorkloadFile(String name, WorkloadRequest request) throws IOException {
+    public String modifyWorkloadFile(String name, WorkloadRequest request) throws IOException, InterruptedException {
         String fileName = name + ".yaml";
-        File file = new File(DIRECTORY, fileName);
+        File file = new File(REPO_DIR, fileName);
+
+        // Clone repo
+        cloneOrPullRepository();
+        System.out.println(file.getAbsolutePath());
 
         if (!file.exists()) {
             throw new IOException("File not found");
@@ -161,12 +169,44 @@ public class WorkloadService {
             writer.write(generateYamlContent(request));
         }
 
+        // Commit and push changes
+        commitAndPush("Updated file "+REPO_DIR+"/"+fileName+".yaml");
+
+
         return file.getAbsolutePath();
     }
 
-    public boolean deleteWorkloadFile(String name) {
+    public boolean deleteWorkloadFile(String name) throws IOException, InterruptedException {
         String fileName = name + ".yaml";
-        File file = new File(DIRECTORY, fileName);
-        return file.delete();
+        File file = new File(REPO_DIR, fileName);
+        cloneOrPullRepository();
+        if (!file.exists()) {
+            return false;
+        }
+        file.delete();
+        commitAndPush("Deleted file "+REPO_DIR+"/"+fileName+".yaml");
+        return true;
+    }
+
+    private void cloneOrPullRepository() throws IOException, InterruptedException {
+        // Execute shell command to clone the repository
+        System.out.println(System.getProperty("user.dir"));
+        System.out.println("powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 ; CloneOrPull "+ SSH_PRIV_KEY +" "+ REPO_URL +" "+ REPO_DIR + "}\"");
+        String cloneCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+System.getProperty("user.dir")+"\\scripts\\git-utility.ps1 ; CloneOrPull "+ SSH_PRIV_KEY +" "+ REPO_URL +" "+ REPO_DIR + "}\"";
+        executePowerShellCommand(cloneCommand);
+    }
+
+    private void commitAndPush(String commitMessage) throws IOException, InterruptedException {
+        // Execute shell command to commit and push changes
+        String commitCommand = "powershell -ExecutionPolicy Bypass -command \"& { . "+ System.getProperty("user.dir") +"\\scripts\\git-utility.ps1 ; CommitAndPush "+ SSH_PRIV_KEY +" "+ REPO_DIR + " " + commitMessage + "}\"";
+        executePowerShellCommand(commitCommand);
+    }
+
+    private void executePowerShellCommand(String command) throws IOException, InterruptedException {
+        Process process = Runtime.getRuntime().exec(command);
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IOException("PowerShell command failed with exit code " + exitCode);
+        }
     }
 }

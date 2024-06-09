@@ -23,6 +23,8 @@ public class WorkloadController {
             return ResponseEntity.ok("Workload file created at: " + filePath);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Error creating workload file: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -33,16 +35,18 @@ public class WorkloadController {
             return ResponseEntity.ok("Workload file updated at: " + filePath);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Error updating workload file: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @DeleteMapping("/{name}")
-    public ResponseEntity<String> deleteWorkload(@PathVariable String name) {
+    public ResponseEntity<String> deleteWorkload(@PathVariable String name) throws IOException, InterruptedException {
         boolean deleted = workloadService.deleteWorkloadFile(name);
         if (deleted) {
             return ResponseEntity.ok("Workload file deleted");
         } else {
-            return ResponseEntity.status(500).body("Error deleting workload file");
+            return ResponseEntity.status(500).body("File does not exist");
         }
     }
 }
